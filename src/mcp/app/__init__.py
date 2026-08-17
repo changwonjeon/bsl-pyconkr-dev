@@ -1,0 +1,2 @@
+"""Meal Battle MCP server."""
+

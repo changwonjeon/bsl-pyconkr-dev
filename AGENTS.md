@@ -8,8 +8,8 @@
 
 - 이 프로젝트는 NEIS 공개 API를 활용해 학교 급식 메뉴를 조회하고 분석하는
   웹 애플리케이션을 단계별로 구현하는 워크숍입니다.
-- 현재 MVP는 React 프론트엔드, FastAPI 백엔드, 내부 OpenAPI 계약 및 Docker
-  Compose 실행 환경으로 구현되어 있습니다.
+- 현재 MVP는 React 프론트엔드, FastAPI 백엔드, 독립 MCP 서버, 내부 OpenAPI
+  계약 및 Docker Compose 실행 환경으로 구현되어 있습니다.
 - 사용자는 두 글자 이상의 학교명을 입력해 학교를 자동 검색하고, 학교와 날짜
   범위를 선택해 중식 메뉴·열량·영양·원산지·급식 인원을 조회할 수 있습니다.
 - 승인된 제품 요구사항은 `PRD.md`, 기술 요구사항은 `TRD.md`를 기준으로
@@ -22,7 +22,7 @@
 
 - 모든 애플리케이션과 테스트 코드는 `src` 아래에 둡니다.
 - React 프론트엔드는 `src/web`, Python 백엔드는 `src/api`, E2E 테스트는
-  `src/e2e`에서 관리합니다.
+  `src/e2e`, MCP 서버는 `src/mcp`에서 관리합니다.
 - 프론트엔드의 화면 흐름은 `src/web/src/App.tsx`, 내부 API 호출은
   `src/web/src/api/client.ts`, 날짜 정책은 `src/web/src/utils/dates.ts`에
   있습니다. 컴포넌트에서 `fetch`를 직접 호출하지 않습니다.
@@ -36,7 +36,12 @@
 - `src/web/src/api/schema.d.ts`는 `src/openapi.json`에서 생성되는 파일입니다.
   직접 수정하지 말고 `src/web`에서 `npm run generate:api`를 실행합니다.
 - `data/openapi.json`은 백엔드와 NEIS 사이의 외부 API 계약입니다.
+  백엔드와 MCP 서버가 각각 독립된 NEIS 클라이언트를 구현할 때 사용하며,
   프론트엔드는 이 명세로 NEIS를 직접 호출하지 않습니다.
+- MCP 서버는 공식 MCP Python SDK 1.x와 Streamable HTTP를 사용하고
+  `/mcp`에서 `search_schools`, `get_school_lunches` 도구를 제공합니다.
+- MCP 도구의 입력 오류, 빈 결과 및 NEIS 장애는 안정적인 오류 코드가 포함된
+  MCP 도구 오류로 반환하며 API 키나 외부 응답 원문을 노출하지 않습니다.
 - 학교 검색어는 앞뒤 공백 제거 후 2~100자로 검증합니다.
 - 프론트엔드는 유효한 검색어 입력 후 350ms 동안 추가 입력이 없으면 자동으로
   검색하며, 백엔드에서도 같은 길이 제약을 다시 검증합니다.
@@ -74,6 +79,8 @@
   가변 상태와 숨은 부작용을 피합니다.
 - FastAPI 앱은 `create_app` 팩터리에서 설정, HTTP 전송 및 기준 날짜를 주입할
   수 있게 유지합니다. 테스트에서 실제 NEIS 네트워크를 호출하지 않습니다.
+- MCP 서버는 `create_server` 팩터리에서 설정과 HTTP 전송을 주입할 수 있게
+  유지하고, 공식 SDK의 메모리 전송으로 도구 조회·호출을 통합 테스트합니다.
 - NEIS 호출은 연결 풀을 공유하는 HTTPX `AsyncClient`를 사용합니다. 실제 NEIS
   서버 호환성을 위해 IPv4 전송을 유지하고 `Accept: application/json` 헤더를
   강제로 추가하지 않습니다.
@@ -110,6 +117,10 @@
   `npm test`, `npm run typecheck`를 사용합니다.
 - 백엔드는 `src/api`에서 `uv sync --locked --all-groups`,
   `uv run uvicorn app.main:app --reload`, `uv run --locked pytest`를 사용합니다.
+- MCP 서버는 `src/mcp`에서 `uv sync --locked --all-groups`,
+  `uv run --locked python -m app.main`, `uv run --locked pytest`를 사용합니다.
+  MCP Inspector는 `npx -y @modelcontextprotocol/inspector`로 실행하고
+  `http://localhost:8001/mcp`에 연결합니다.
 - E2E는 `src/e2e`에서 `npm ci`, `npx playwright install chromium`,
   `npm test`를 사용합니다. 테스트는 Compose로 전체 앱을 실행하고
   `src/e2e/fixtures`의 결정적 NEIS 대역만 사용합니다.
@@ -127,6 +138,8 @@
   결과·빈 상태를 사용자 행동 기준으로 검증합니다.
 - 백엔드 테스트는 NEIS 오류 변환, 중식 코드 강제, 날짜 정책, 데이터 매핑 및
   OpenAPI 계약을 검증합니다.
+- MCP 테스트는 도구 목록과 구조화 출력, 중식 코드 강제, 빈 결과, 입력 검증,
+  NEIS 오류 및 타임아웃의 MCP 도구 오류 변환을 검증합니다.
 - E2E는 브라우저에서 학교 자동 검색, 선택, 중식 조회를 데스크톱과 모바일
   뷰포트로 검증합니다. 내부 `/api/v1` 요청을 브라우저에서 가로채지 않습니다.
 - 동작을 변경하면 정상 경로, 실패 경로와 관련 경계 조건을 검증하는 테스트를

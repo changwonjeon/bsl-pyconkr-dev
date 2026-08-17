@@ -69,6 +69,22 @@ docker compose up --build
 브라우저에서 <http://localhost:8080>을 열면 학교 검색, 날짜 범위 선택 및
 중식 조회를 사용할 수 있습니다.
 
+MCP 서버는 Streamable HTTP 방식으로 <http://localhost:8001/mcp>에서
+실행됩니다. MCP 서버만 로컬에서 실행하려면 다음 명령을 사용합니다.
+
+```sh
+cd src/mcp
+uv sync --locked --all-groups
+NEIS_API_KEY=replace-with-your-neis-api-key uv run --locked python -m app.main
+```
+
+별도 터미널에서 MCP Inspector를 실행한 뒤
+`http://localhost:8001/mcp`에 연결합니다.
+
+```sh
+npx -y @modelcontextprotocol/inspector
+```
+
 개별 개발 서버와 테스트 명령은 [기여 가이드](CONTRIBUTING.md)를 확인하세요.
 
 ## 추가 학습 자료
