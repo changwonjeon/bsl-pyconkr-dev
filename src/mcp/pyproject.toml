@@ -1,0 +1,23 @@
+[project]
+name = "meal-battle-mcp"
+version = "0.1.0"
+description = "MCP server for searching Korean schools and school lunches"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "httpx>=0.28.1,<0.29",
+    "mcp[cli]>=1.29.0,<2",
+    "pydantic>=2.11,<2.13",
+    "pydantic-settings>=2.10.1,<2.13",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1,<9",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]

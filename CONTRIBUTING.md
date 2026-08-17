@@ -42,6 +42,29 @@ cd src/api
 uv run uvicorn app.main:app --reload
 ```
 
+MCP 서버 설정 및 검사:
+
+```sh
+cd src/mcp
+uv sync --locked --all-groups
+uv run --locked pytest
+```
+
+MCP 서버 실행:
+
+```sh
+cd src/mcp
+NEIS_API_KEY=replace-with-your-neis-api-key uv run --locked python -m app.main
+```
+
+MCP Inspector 실행:
+
+```sh
+npx -y @modelcontextprotocol/inspector
+```
+
+Inspector에서 Streamable HTTP 주소 `http://localhost:8001/mcp`에 연결합니다.
+
 전체 애플리케이션 실행:
 
 ```sh
